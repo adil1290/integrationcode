@@ -1,0 +1,47 @@
+from flask import Flask, request, jsonify
+import requests
+
+app = Flask(__name__)
+
+AIRTABLE_API_KEY = 'patoEhVQ2p5M30qiK.96edd91502dafe5bd552df12be8f5b8a2c8d25c92222ba970b66ac2e60ad8ac5'
+AIRTABLE_BASE_ID = 'appYnngHVh7FidnaH'
+AIRTABLE_TABLE_NAME = 'sample base'
+ASANA_ACCESS_TOKEN = '1/1205232514224602:1733ebd0866c9f5eefcb3409025bc2e3'
+
+@app.route('/webhook', methods=['POST'])
+def webhook():
+    try:
+        data = request.json
+        new_task = data['data']
+
+        task_id = new_task['id']
+        name = new_task['name']
+        assignee = new_task['assignee']['name']
+        due_date = new_task['due_on']
+        description = new_task['notes']
+
+        headers = {
+            'Authorization': f'Bearer {AIRTABLE_API_KEY}',
+            'Content-Type': 'application/json'
+        }
+
+        airtable_url = f'https://api.airtable.com/v0/{AIRTABLE_BASE_ID}/{AIRTABLE_TABLE_NAME}'
+        airtable_payload = {
+            "fields": {
+                "Task ID": task_id,
+                "Name": name,
+                "Assignee": assignee,
+                "Due Date": due_date,
+                "Description": description
+            }
+        }
+
+        airtable_response = requests.post(airtable_url, json=airtable_payload, headers=headers)
+        return jsonify(airtable_response.json()), 200
+
+    except Exception as e:
+        print(str(e))
+        return "Error", 500
+
+if __name__ == '__main__':
+    app.run(debug=True)
